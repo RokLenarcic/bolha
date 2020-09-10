@@ -21,7 +21,7 @@ Ali pa pozenes s `clj` komando,
 instalacija https://www.clojure.org/guides/getting_started#_clojure_installer_and_cli_tools
 
 ```
-clj -Sdeps '{:deps {bolha {:git/url "https://github.com/RokLenarcic/bolha.git" :sha "6bd10d8607a0de3e5dde077a7a79199ee12ed5e1"}}}' -m bolha
+clj -Sdeps '{:deps {bolha {:git/url "https://github.com/RokLenarcic/bolha.git" :sha "f5e69536457120c90d55c68235d1d1c9ada2212b"}}}' -m bolha
 ```
 
 Ce opcije niso podane jih izpise. Primer opcij:
