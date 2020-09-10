@@ -6,7 +6,7 @@ Ali:
 
 Download jar
 
-https://github.com/RokLenarcic/bolha/releases/download/v0.0.1/bolha.jar
+https://github.com/RokLenarcic/bolha/releases/download/v0.0.2/bolha.jar
 
 In pozenes z:
 

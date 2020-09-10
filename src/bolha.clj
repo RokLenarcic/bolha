@@ -5,11 +5,8 @@
             [net.cgrand.enlive-html :as html]
             [postal.core :as postal]
             [clojure.java.io :as io])
-  (:import (java.io StringReader)
-           (java.net URLEncoder))
+  (:import (java.io StringReader))
   (:gen-class))
-
-(def req-params {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Safari/605.1.15"}})
 
 (defn render-ads [ads]
   (->> ads
@@ -29,24 +26,29 @@
 
 (defn ads [htm]
   (map
-    #(hash-map :title (-> (html/select % [:div.content :a]) first :attrs :title)
-               :desc (-> (html/select % [:div.content :> (html/but-node [:h3])]) html/texts join (.trim))
-               :href (-> (html/select % [:div.content :a]) first :attrs :href)
-               :image (-> (html/select % [:div.image :img]) first :attrs :data-original)
-               :price (-> (html/select % [:div.prices]) html/texts join (.trim)))
+    #(hash-map
+       :title (-> (html/select % [:h3.entity-title :a]) html/texts join)
+       :desc (->> (html/select % [:div.entity-description-main]) html/texts join (.trim))
+       :href (->> (html/select % [:h3.entity-title :a]) first :attrs :href (str "https://www.bolha.com"))
+       :image (->> (html/select % [:img.entity-thumbnail-img]) first :attrs :data-src (str "https:" ))
+       :price (-> (html/select % [:li.price-item]) html/texts join (.trim)))
     (html/select
       htm
-      [:section#list [:div.ad (html/but (html/attr-contains :style "background"))]])))
+      [:div.EntityList--Regular :article.entity-body.cf])))
 
 (defn scrape-ads [params]
-  (let [scraped (some-> (format "http://www.bolha.com/iskanje?q=%s&sort=1"
-                                (URLEncoder/encode (:query params)))
-                        (client/get req-params)
+  (let [scraped (some->
+                  (client/get "https://www.bolha.com/"
+                              {:headers {"User-Agent" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.2 Safari/605.1.15"}
+                               :query-params {"ctl" "search_ads"
+                                              "keywords" (:query params)
+                                              "sort" "new"}})
                         :body
                         StringReader.
                         html/html-resource)
         log (when (.exists (io/file (:lock-file params))) (read-string (slurp (:lock-file params))))
         actual-ads (take-while #(not= log %) (ads scraped))]
+    (println actual-ads)
     (when (not-empty actual-ads)
       (postal/send-message
         (select-keys params [:host :user :pass :port :tls :ssl])
@@ -65,7 +67,7 @@
    ["-p" "--port PORT" "SMTP port" :parse-fn #(Integer/parseInt %)]
    ["-T" "--tls" "SMTP TLS enabled?"]
    ["-S" "--ssl" "SMTP SSL enabled?"]
-   ["-q" "--query QUERY" "Search query e.g. 'lego' - required"]
+   ["-q" "--query QUERY" "Search query e.g. 'lego' - required or query-url"]
    ["-l" "--lock-file FILE" "File used to track last sent ad" :default "bolha.lock"]])
 
 (defn -main [& args]
